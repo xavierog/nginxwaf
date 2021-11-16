@@ -134,16 +134,16 @@ doc = yaml.load(sys.stdin, Loader=yaml.SafeLoader)
 
 uninitialized_variable_warn = doc.get('uninitialized_variable_warn', True)
 variable = doc.get('variable', 'waf')
-prefix = doc.get('prefix', '/waf')
+waf_prefix = doc.get('prefix', '/waf')
 status = doc.get('status', 405)
 
 if uninitialized_variable_warn:
 	print('uninitialized_variable_warn off;')
 print('if ($%s = "") {' % variable)
-print('\trewrite ^ "%s${uri}" last;' % prefix)
+print('\trewrite ^ "%s${uri}" last;' % waf_prefix)
 print('}')
 print('')
-print('location %s {' % prefix)
+print('location %s {' % waf_prefix)
 print('\tinternal;')
 print('\t# Executed if none of the nested locations matched:')
 print('\treturn %d;' % status)
@@ -153,10 +153,10 @@ for uri in doc.get('uri', []):
 	if looks_like_pcre(pattern):
 		operator = '~'
 		# Prefix and anchor the pattern, then prepend relevant PCRE options:
-		pattern = add_options_to_pattern(anchor_pattern(prefix + pattern))
+		pattern = add_options_to_pattern(anchor_pattern(waf_prefix + pattern))
 	else:
 		operator = '='
-		pattern = prefix + pattern
+		pattern = waf_prefix + pattern
 	print(re.sub(r'(?m)^', '\t# ', uri['pattern']))
 	print('\tlocation %s %s {' % (operator, nginx_quote(pattern)))
 	print('\t\tinternal;')
@@ -226,6 +226,6 @@ for uri in doc.get('uri', []):
 
 	print('')
 	print('\t\t# Exit from the WAF part and return to regular nginx locations:')
-	print('\t\trewrite "^%s(?<tail>.*)" "${tail}" last;' % prefix)
+	print('\t\trewrite "^%s(?<tail>.*)" "${tail}" last;' % waf_prefix)
 	print('\t}')
 print('}')
