@@ -125,7 +125,7 @@ def get_item(obj, key, item_type=None):
 def check_non_mandatory_item(presence_condition, mismatch_condition, return_status):
 	print('\t\tset $current_item_present "0";')
 	print('\t\tif (%s) { set $current_item_present "1"; }' % presence_condition)
-	print('\t\tset $current_item_match "0";')
+	print('\t\tset $current_item_mismatch "0";')
 	print('\t\tif (%s) { set $current_item_mismatch "1"; }' % mismatch_condition)
 	print('\t\tset $buf "${current_item_present}${current_item_mismatch}";')
 	print('\t\tif ($buf = "11") { return %d; }' % return_status)
