@@ -19,9 +19,36 @@ pattern_id_re = r'''(?x) # extended/verbose/free-spacing mode
 EXPAND_PATTERN_RECURSION = 0
 EXPAND_PATTERN_RECURSION_LIMIT = 100
 
+def is_single_group(pattern):
+	"""
+	Ensure the given pattern is a single group, i.e. "(foo)", "((foo)(bar))" but not "(foo)(bar)".
+	"""
+	# Groups must start and end with a parenthesis:
+	if not pattern.startswith('(') or not pattern.endswith(')'):
+		return False
+	level = 0
+	skip = False
+	for pos, char in enumerate(pattern):
+		if skip:
+			skip = False
+			continue
+		if char == '(':
+			level += 1
+		elif char == '\\':
+			skip = True
+		elif char == ')':
+			level -= 1
+		if level == 0:
+			# We reached level 0 again; this should only happen after the last character:
+			return pos == len(pattern) - 1
+	# Still there? Something went wrong, e.g. escaped closing parenthesis
+	return False
+
 def group_pattern(pattern, force=False):
-	if force or ('|' in pattern and not pattern.startswith('(') and not pattern.endswith(')')):
-		pattern = '(?:%s)' % pattern
+	if force or ('|' in pattern):
+		# Prevent unnecessary double-grouping, e.g. (?:(?:foo)):
+		if not is_single_group(pattern):
+			pattern = '(?:%s)' % pattern
 	return pattern
 
 def anchor_pattern(pattern):
@@ -57,7 +84,15 @@ def get_pattern_by_match(rem):
 
 def get_pattern_to_inject(rem):
 	pattern = get_pattern_by_match(rem)
-	pattern = group_pattern(pattern)
+	# Systematically enclose the pattern within a non-capturing group to
+	# prevent these problematic cases:
+	# Case #1:
+	#   foo: '[a-z]+[0-9]{2}'
+	#   bar: '{foo}{5}' => '[a-z]+[0-9]{2}{5}' vs '(?:[a-z]+[0-9]{2}){5}'
+	# Case #2:
+	#   foo: '(foo)(bar)'
+	#   bar: '{foo}{5}' => '(foo)(bar){5}' vs '(?:(foo)(bar)){5}'
+	pattern = group_pattern(pattern, True)
 	return pattern
 
 def expand_pattern(pattern, group=False, anchor=False):
