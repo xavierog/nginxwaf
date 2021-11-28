@@ -137,9 +137,15 @@ variable = doc.get('variable', 'waf')
 waf_prefix = doc.get('prefix', '/waf')
 uri_prefix = doc.get('uri_prefix', '')
 status = doc.get('status', 405)
+debug = doc.get('debug', False)
 
 if uninitialized_variable_warn:
 	print('uninitialized_variable_warn off;')
+if debug:
+	print('')
+	print('# Make debug data available through an extra HTTP header:')
+	print('add_header X-WAF-Debug "${%s_debug}";' % variable)
+	print('')
 print('if ($%s = "") {' % variable)
 print('\trewrite ^ "%s${uri}" last;' % waf_prefix)
 print('}')
@@ -163,6 +169,8 @@ for uri in doc.get('uri', []):
 	print('\tlocation %s %s {' % (operator, nginx_quote(pattern)))
 	print('\t\tinternal;')
 	print('\t\tset $%s "1";' % variable)
+	if debug:
+		print('\t\tset $%s_debug "%s";' % (variable, full_uri_pattern.replace('\n', '')))
 	policy = get_item(uri, 'policy')
 
 	methods = get_item(policy, 'method')
