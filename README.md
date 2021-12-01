@@ -6,3 +6,5 @@ Usage:
 ```sh
 ./nginxwaf < myapp-waf.yaml > myapp-waf.nginx.conf
 ```
+
+Format: see [FORMAT.md](FORMAT.md)
